@@ -37,7 +37,8 @@ class MLTextClassifier:
         Convert distance from 0.5 into confidence.
         - 0.5 means maximum uncertainty for binary classification.
         - Values closer to 0 or 1 imply stronger model certainty.
-        - We clamp to [0.0, 0.99] so near-uncertain predictions stay low-confidence.
+        - We clamp to [0.0, 0.99] so near-uncertain predictions stay low-confidence
+          while avoiding exact 1.0 confidence in the UI.
         """
         # Scale |p-0.5| from [0, 0.5] to [0, 1]; e.g., p=0.9 => 0.8 confidence signal.
         distance_from_center = abs(probability - 0.5) * 2

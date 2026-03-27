@@ -42,6 +42,14 @@ class CompanyVerifier:
     def _normalize_company_name(company_name: str) -> str:
         return " ".join(company_name.lower().strip().split())
 
+    @staticmethod
+    def _calculate_required_overlap(token_count: int) -> int:
+        return (
+            MIN_REQUIRED_OVERLAP_SHORT
+            if token_count <= SHORT_NAME_TOKEN_THRESHOLD
+            else MIN_REQUIRED_OVERLAP_LONG
+        )
+
     def check_website_exists(self, company_name: str, website_url: Optional[str] = None) -> Tuple[bool, str]:
         """
         Check if company website is accessible.
@@ -114,11 +122,7 @@ class CompanyVerifier:
             # - Short names (1-2 tokens): 1 token overlap avoids over-rejecting valid firms.
             # - Longer names: 2 token overlap reduces false positives from generic words.
             # Example: "Apple" => 1 overlap; "Apple Inc" => 1 overlap; "Big Tech Solutions" => 2 overlaps.
-            required_overlap = (
-                MIN_REQUIRED_OVERLAP_SHORT
-                if len(search_tokens) <= SHORT_NAME_TOKEN_THRESHOLD
-                else MIN_REQUIRED_OVERLAP_LONG
-            )
+            required_overlap = self._calculate_required_overlap(len(search_tokens))
             if overlap >= required_overlap:
                 jurisdiction = company.get("jurisdiction_code", "unknown")
                 return True, f"Found in public registry ({jurisdiction})"

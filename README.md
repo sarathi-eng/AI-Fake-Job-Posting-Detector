@@ -156,7 +156,7 @@ export NEXT_PUBLIC_API_BASE_URL="http://localhost:8000"
 
 ![Live demo](assets/demo.gif)
 
-> Add or replace the GIF at `assets/demo.gif` with a current walkthrough.
+> Temporary placeholder. Replace `assets/demo.gif` with a real walkthrough recording before release.
 
 ---
 

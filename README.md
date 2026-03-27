@@ -376,6 +376,8 @@ Reasons:
 - **Risk 30-60**: 🟡 **SUSPICIOUS** (medium confidence)
 - **Risk < 30**: 🟢 **LEGITIMATE** (high confidence)
 
+These thresholds were re-tuned for the ensemble to keep detector/API sample tests stable while adding ML probability as a second signal.
+
 ---
 
 ## 🧠 ML Training (EMSCAD Kaggle Dataset)

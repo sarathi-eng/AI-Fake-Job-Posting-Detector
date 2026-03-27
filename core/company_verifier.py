@@ -21,7 +21,14 @@ class CompanyVerifier:
     def _create_session():
         """Create a session with retry strategy."""
         session = requests.Session()
-        retry = Retry(connect=3, read=3, backoff_factor=0.5)
+        retry = Retry(
+            connect=3,
+            read=3,
+            status=3,
+            backoff_factor=0.5,
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=("GET", "HEAD"),
+        )
         adapter = HTTPAdapter(max_retries=retry)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
@@ -99,7 +106,9 @@ class CompanyVerifier:
                 continue
             candidate_tokens = set(candidate_name.split())
             overlap = len(search_tokens & candidate_tokens)
-            if overlap >= max(1, min(2, len(search_tokens))):
+            # Require at least one overlapping token for short names, and two for longer names.
+            required_overlap = 1 if len(search_tokens) <= 2 else 2
+            if overlap >= required_overlap:
                 jurisdiction = company.get("jurisdiction_code", "unknown")
                 return True, f"Found in public registry ({jurisdiction})"
 

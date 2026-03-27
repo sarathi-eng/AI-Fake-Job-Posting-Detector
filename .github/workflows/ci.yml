@@ -28,6 +28,11 @@ jobs:
         run: |
           python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 &
           UVICORN_PID=$!
-          sleep 5
+          for i in {1..30}; do
+            if curl -sf http://127.0.0.1:8000/health >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
           python test_api.py
           kill "$UVICORN_PID"

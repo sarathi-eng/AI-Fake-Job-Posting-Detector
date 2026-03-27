@@ -31,6 +31,16 @@ class MLTextClassifier:
             self.model = None
             self.available = False
 
+    @staticmethod
+    def _probability_to_confidence(probability: float) -> float:
+        """
+        Convert distance from 0.5 into confidence.
+        - 0.5 => low confidence floor
+        - near 0 or 1 => high confidence cap
+        """
+        distance_from_center = abs(probability - 0.5) * 2
+        return max(0.5, min(0.99, distance_from_center))
+
     def predict_fraud_probability(self, text: str) -> Optional[float]:
         if not self.available or self.model is None:
             return None
@@ -55,7 +65,7 @@ class MLTextClassifier:
             {
                 "category": "ml_classifier",
                 "signal": "ml_fraud_probability",
-                "confidence": max(0.5, min(0.99, abs(prob - 0.5) * 2)),
+                "confidence": self._probability_to_confidence(prob),
                 "message": f"ML classifier fraud probability: {prob * 100:.1f}%",
             }
         ]

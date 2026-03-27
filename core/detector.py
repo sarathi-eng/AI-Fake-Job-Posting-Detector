@@ -6,6 +6,9 @@ from core.company_verifier import CompanyVerifier
 from core.salary_analyzer import SalaryAnalyzer
 from core.ml_classifier import MLTextClassifier
 
+RULE_WEIGHT = 0.60
+ML_WEIGHT = 0.40
+
 
 class FakeJobDetector:
     """Main detector combining all analysis modules."""
@@ -68,7 +71,7 @@ class FakeJobDetector:
         # Weighted ensemble of ML probability and rule-based model
         # (When ML model unavailable, fallback to rule-only risk score.)
         if ml_available:
-            final_risk_score = (rule_risk_score * 0.60) + (ml_risk_score * 0.40)
+            final_risk_score = (rule_risk_score * RULE_WEIGHT) + (ml_risk_score * ML_WEIGHT)
         else:
             final_risk_score = rule_risk_score
 

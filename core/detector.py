@@ -6,6 +6,8 @@ from core.company_verifier import CompanyVerifier
 from core.salary_analyzer import SalaryAnalyzer
 from core.ml_classifier import MLTextClassifier
 
+# Weighted towards rule signals so behavior remains stable when model artifact
+# is newly introduced or unavailable; ML still contributes materially.
 RULE_WEIGHT = 0.60
 ML_WEIGHT = 0.40
 

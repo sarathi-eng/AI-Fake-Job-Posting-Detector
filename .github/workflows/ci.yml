@@ -28,11 +28,18 @@ jobs:
         run: |
           python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 &
           UVICORN_PID=$!
+          API_READY=0
           for i in {1..30}; do
             if curl -sf http://127.0.0.1:8000/health >/dev/null; then
+              API_READY=1
               break
             fi
             sleep 1
           done
+          if [ "$API_READY" -ne 1 ]; then
+            echo "API failed to become healthy within 30 seconds"
+            kill "$UVICORN_PID" || true
+            exit 1
+          fi
           python test_api.py
           kill "$UVICORN_PID"

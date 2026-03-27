@@ -21,7 +21,13 @@ def _build_text(df: pd.DataFrame) -> pd.Series:
     return df[cols].fillna("").agg(" ".join, axis=1)
 
 
-def train(dataset_path: Path, output_model_path: Path) -> None:
+def train(
+    dataset_path: Path,
+    output_model_path: Path,
+    ngram_max: int,
+    min_df: int,
+    max_features: int,
+) -> None:
     df = pd.read_csv(dataset_path)
     if "fraudulent" not in df.columns:
         raise ValueError("Dataset must include 'fraudulent' target column.")
@@ -39,7 +45,14 @@ def train(dataset_path: Path, output_model_path: Path) -> None:
 
     pipeline = Pipeline(
         steps=[
-            ("tfidf", TfidfVectorizer(ngram_range=(1, 2), min_df=2, max_features=50000)),
+            (
+                "tfidf",
+                TfidfVectorizer(
+                    ngram_range=(1, ngram_max),
+                    min_df=min_df,
+                    max_features=max_features,
+                ),
+            ),
             ("clf", LogisticRegression(max_iter=1000, class_weight="balanced")),
         ]
     )
@@ -57,8 +70,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Train fake job classifier from EMSCAD CSV.")
     parser.add_argument("--dataset", required=True, help="Path to EMSCAD CSV from Kaggle.")
     parser.add_argument("--out", default="models/fake_job_classifier.joblib", help="Output model path.")
+    parser.add_argument("--ngram-max", type=int, default=2, help="Max n-gram size for TF-IDF.")
+    parser.add_argument("--min-df", type=int, default=2, help="Min document frequency for TF-IDF.")
+    parser.add_argument("--max-features", type=int, default=50000, help="Max TF-IDF vocabulary size.")
     args = parser.parse_args()
-    train(Path(args.dataset), Path(args.out))
+    train(
+        Path(args.dataset),
+        Path(args.out),
+        args.ngram_max,
+        args.min_df,
+        args.max_features,
+    )
 
 
 if __name__ == "__main__":

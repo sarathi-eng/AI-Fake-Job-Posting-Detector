@@ -376,7 +376,7 @@ Reasons:
 - **Risk 30-60**: 🟡 **SUSPICIOUS** (medium confidence)
 - **Risk < 30**: 🟢 **LEGITIMATE** (high confidence)
 
-These thresholds were re-tuned for the ensemble to keep detector/API sample tests stable while adding ML probability as a second signal.
+These thresholds were re-tuned for the ensemble (from 70/40 to 60/30) to preserve practical detector behavior on the existing sample tests after adding ML probability as a second signal.
 
 ---
 

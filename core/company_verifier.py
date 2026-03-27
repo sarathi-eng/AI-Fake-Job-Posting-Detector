@@ -10,6 +10,9 @@ from urllib3.util.retry import Retry
 
 from core.settings import settings
 
+MIN_REQUIRED_OVERLAP_SHORT = 1
+MIN_REQUIRED_OVERLAP_LONG = 2
+
 
 class CompanyVerifier:
     """Verifies company legitimacy through various sources."""
@@ -106,8 +109,14 @@ class CompanyVerifier:
                 continue
             candidate_tokens = set(candidate_name.split())
             overlap = len(search_tokens & candidate_tokens)
-            # Require at least one overlapping token for short names, and two for longer names.
-            required_overlap = 1 if len(search_tokens) <= 2 else 2
+            # Matching heuristic:
+            # - Short names (<=2 tokens): 1 token overlap avoids over-rejecting valid firms.
+            # - Longer names: 2 token overlap reduces false positives from generic words.
+            required_overlap = (
+                MIN_REQUIRED_OVERLAP_SHORT
+                if len(search_tokens) <= 2
+                else MIN_REQUIRED_OVERLAP_LONG
+            )
             if overlap >= required_overlap:
                 jurisdiction = company.get("jurisdiction_code", "unknown")
                 return True, f"Found in public registry ({jurisdiction})"

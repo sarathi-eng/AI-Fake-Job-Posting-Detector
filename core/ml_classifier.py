@@ -35,8 +35,9 @@ class MLTextClassifier:
     def _probability_to_confidence(probability: float) -> float:
         """
         Convert distance from 0.5 into confidence.
-        - 0.5 => low confidence floor
-        - near 0 or 1 => high confidence cap
+        - 0.5 means maximum uncertainty for binary classification.
+        - Values closer to 0 or 1 imply stronger model certainty.
+        - We clamp to [0.5, 0.99] so displayed confidence stays bounded and readable.
         """
         distance_from_center = abs(probability - 0.5) * 2
         return max(0.5, min(0.99, distance_from_center))

@@ -367,7 +367,7 @@ Reasons:
    - Salary analysis: 20%
 2. **ML fraud probability** (0-1.0): scikit-learn model trained on EMSCAD
 3. **Weighted ensemble**:
-   - Final risk = `0.55 × rule_risk + 0.45 × ml_probability` (when model is available)
+   - Final risk = `0.60 × rule_risk + 0.40 × ml_probability` (when model is available)
    - Fallback = rule-only risk (when model file is missing or disabled)
 4. **Final score** = risk × 100
 

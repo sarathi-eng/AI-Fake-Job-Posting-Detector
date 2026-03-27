@@ -5,11 +5,7 @@ from core.text_analyzer import TextAnalyzer
 from core.company_verifier import CompanyVerifier
 from core.salary_analyzer import SalaryAnalyzer
 from core.ml_classifier import MLTextClassifier
-
-# Weighted towards rule signals so behavior remains stable when model artifact
-# is newly introduced or unavailable; ML still contributes materially.
-RULE_WEIGHT = 0.60
-ML_WEIGHT = 0.40
+from core.settings import settings
 
 
 class FakeJobDetector:
@@ -73,7 +69,11 @@ class FakeJobDetector:
         # Weighted ensemble of ML probability and rule-based model
         # (When ML model unavailable, fallback to rule-only risk score.)
         if ml_available:
-            final_risk_score = (rule_risk_score * RULE_WEIGHT) + (ml_risk_score * ML_WEIGHT)
+            final_risk_score = (
+                rule_risk_score * settings.ensemble_rule_weight
+            ) + (
+                ml_risk_score * settings.ensemble_ml_weight
+            )
         else:
             final_risk_score = rule_risk_score
 

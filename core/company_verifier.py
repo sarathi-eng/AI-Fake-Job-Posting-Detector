@@ -12,6 +12,7 @@ from core.settings import settings
 
 MIN_REQUIRED_OVERLAP_SHORT = 1
 MIN_REQUIRED_OVERLAP_LONG = 2
+SHORT_NAME_TOKEN_THRESHOLD = 2
 
 
 class CompanyVerifier:
@@ -114,7 +115,7 @@ class CompanyVerifier:
             # - Longer names: 2 token overlap reduces false positives from generic words.
             required_overlap = (
                 MIN_REQUIRED_OVERLAP_SHORT
-                if len(search_tokens) <= 2
+                if len(search_tokens) <= SHORT_NAME_TOKEN_THRESHOLD
                 else MIN_REQUIRED_OVERLAP_LONG
             )
             if overlap >= required_overlap:

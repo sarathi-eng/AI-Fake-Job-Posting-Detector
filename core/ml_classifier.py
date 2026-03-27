@@ -39,6 +39,7 @@ class MLTextClassifier:
         - Values closer to 0 or 1 imply stronger model certainty.
         - We clamp to [0.5, 0.99] so displayed confidence stays bounded and readable.
         """
+        # Scale |p-0.5| from [0, 0.5] to [0, 1]; e.g., p=0.9 => 0.8 confidence signal.
         distance_from_center = abs(probability - 0.5) * 2
         return max(0.5, min(0.99, distance_from_center))
 

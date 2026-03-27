@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     company_registry_api_key: str = ""
     model_path: str = "models/fake_job_classifier.joblib"
     model_enabled: bool = True
+    ensemble_rule_weight: float = 0.60
+    ensemble_ml_weight: float = 0.40
 
     def cors_origins_list(self) -> list[str]:
         if self.app_env.lower() == "dev" and self.cors_allow_origins.strip() == "*":

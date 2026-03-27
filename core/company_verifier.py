@@ -111,7 +111,7 @@ class CompanyVerifier:
             candidate_tokens = set(candidate_name.split())
             overlap = len(search_tokens & candidate_tokens)
             # Matching heuristic:
-            # - Short names (<=2 tokens): 1 token overlap avoids over-rejecting valid firms.
+            # - Short names (1-2 tokens): 1 token overlap avoids over-rejecting valid firms.
             # - Longer names: 2 token overlap reduces false positives from generic words.
             required_overlap = (
                 MIN_REQUIRED_OVERLAP_SHORT

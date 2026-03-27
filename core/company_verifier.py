@@ -1,8 +1,14 @@
 """Company verification module."""
+from __future__ import annotations
+
 from typing import List, Tuple, Optional
+from urllib.parse import urlparse
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+from core.settings import settings
 
 
 class CompanyVerifier:
@@ -15,80 +21,99 @@ class CompanyVerifier:
     def _create_session():
         """Create a session with retry strategy."""
         session = requests.Session()
-        retry = Retry(connect=3, backoff_factor=0.5)
+        retry = Retry(connect=3, read=3, backoff_factor=0.5)
         adapter = HTTPAdapter(max_retries=retry)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
         return session
 
+    @staticmethod
+    def _normalize_company_name(company_name: str) -> str:
+        return " ".join(company_name.lower().strip().split())
+
     def check_website_exists(self, company_name: str, website_url: Optional[str] = None) -> Tuple[bool, str]:
         """
         Check if company website is accessible.
-        
+
         Returns (exists, reason).
         """
         if not website_url:
-            # Try to guess URL from company name
-            website_url = f"https://{company_name.lower().replace(' ', '')}.com"
+            normalized = self._normalize_company_name(company_name).replace(" ", "")
+            website_url = f"https://{normalized}.com"
 
-        # Check if it's a known fake/generic domain
-        if any(fake_indicator in website_url.lower() for fake_indicator in [
-            "techsolutionsinc",
-            "unknownstartup",
-            "xyzconsultancy",
-            "fakecompany",
-            "test.com",
-        ]):
-            return False, "Website domain appears generic or unregistered"
+        parsed = urlparse(website_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            return False, "Company website URL is invalid"
 
         try:
             response = self.session.head(website_url, timeout=3, allow_redirects=True)
             if response.status_code < 400:
                 return True, f"Website accessible at {website_url}"
-            else:
-                return False, f"Website returned status {response.status_code}"
+            return False, f"Website returned status {response.status_code}"
         except requests.RequestException:
-            return False, f"Website not accessible or unreachable"
+            return False, "Website not accessible or unreachable"
 
     def check_company_in_registry(self, company_name: str) -> Tuple[bool, str]:
         """
-        Check if company exists in trusted registries (MCA, etc).
-        This is a stub - in production, would connect to real APIs.
+        Check if company exists in a public registry (OpenCorporates).
         """
-        # Known legitimate companies (demo data)
-        known_companies = {
-            "google": "Found in verified databases",
-            "microsoft": "Found in verified databases",
-            "amazon": "Found in verified databases",
-            "apple": "Found in verified databases",
-            "meta": "Found in verified databases",
-            "infosys": "Found in verified databases",
-            "tcs": "Found in verified databases",
-            "wipro": "Found in verified databases",
-            "accenture": "Found in verified databases",
-        }
-
-        company_lower = company_name.lower().strip()
-        if company_lower in known_companies:
-            return True, known_companies[company_lower]
-
-        # Check if company name looks suspicious
-        if len(company_lower) < 2 or company_lower in ["company", "job", "hiring"]:
+        normalized = self._normalize_company_name(company_name)
+        if len(normalized) < 2 or normalized in {"company", "job", "hiring"}:
             return False, "Company name appears generic or suspicious"
 
-        # For unknown companies, return neutral
-        return False, "Company not found in verified databases"
+        params = {
+            "q": company_name,
+            "order": "score",
+            "per_page": 5,
+            "inactive": "false",
+        }
+        if settings.company_registry_api_key:
+            params["api_token"] = settings.company_registry_api_key
+
+        try:
+            response = self.session.get(
+                settings.company_registry_api_url,
+                params=params,
+                timeout=5,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except requests.RequestException:
+            return False, "Company registry API unreachable"
+        except ValueError:
+            return False, "Company registry API returned invalid response"
+
+        results = (
+            payload.get("results", {})
+            .get("companies", [])
+        )
+
+        if not results:
+            return False, "Company not found in public registry"
+
+        search_tokens = set(normalized.split())
+        for item in results:
+            company = item.get("company", {})
+            candidate_name = self._normalize_company_name(company.get("name", ""))
+            if not candidate_name:
+                continue
+            candidate_tokens = set(candidate_name.split())
+            overlap = len(search_tokens & candidate_tokens)
+            if overlap >= max(1, min(2, len(search_tokens))):
+                jurisdiction = company.get("jurisdiction_code", "unknown")
+                return True, f"Found in public registry ({jurisdiction})"
+
+        return False, "No close company match found in public registry"
 
     def calculate_company_score(self, company_name: str, website_url: Optional[str] = None) -> Tuple[float, List[dict]]:
         """
         Calculate risk score based on company verification.
-        
+
         Returns (risk_score, reasons).
         """
         risk_score = 0.0
         reasons = []
 
-        # Check website
         website_exists, website_msg = self.check_website_exists(company_name, website_url)
         if not website_exists:
             risk_score += 0.3
@@ -110,19 +135,8 @@ class CompanyVerifier:
                 }
             )
 
-        # Check company registry
         in_registry, registry_msg = self.check_company_in_registry(company_name)
-        if not in_registry and website_exists is False:
-            risk_score += 0.3
-            reasons.append(
-                {
-                    "category": "company",
-                    "signal": "not_in_registry",
-                    "confidence": 0.6,
-                    "message": f"❌ {registry_msg}",
-                }
-            )
-        elif in_registry:
+        if in_registry:
             reasons.append(
                 {
                     "category": "company",
@@ -131,5 +145,17 @@ class CompanyVerifier:
                     "message": f"✓ {registry_msg}",
                 }
             )
+            if website_exists:
+                risk_score = max(risk_score - 0.1, 0.0)
+        else:
+            risk_score += 0.3 if not website_exists else 0.1
+            reasons.append(
+                {
+                    "category": "company",
+                    "signal": "not_in_registry",
+                    "confidence": 0.65,
+                    "message": f"❌ {registry_msg}",
+                }
+            )
 
-        return min(risk_score, 1.0), reasons
+        return min(max(risk_score, 0.0), 1.0), reasons

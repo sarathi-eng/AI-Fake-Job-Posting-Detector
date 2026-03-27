@@ -10,7 +10,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+        protected_namespaces=("settings_",),
+    )
 
     app_env: str = "dev"  # dev | prod
 
@@ -25,6 +29,10 @@ class Settings(BaseSettings):
     cors_allow_methods: str = "*"
     # Comma-separated list or '*'
     cors_allow_headers: str = "*"
+    company_registry_api_url: str = "https://api.opencorporates.com/v0.4/companies/search"
+    company_registry_api_key: str = ""
+    model_path: str = "models/fake_job_classifier.joblib"
+    model_enabled: bool = True
 
     def cors_origins_list(self) -> list[str]:
         if self.app_env.lower() == "dev" and self.cors_allow_origins.strip() == "*":

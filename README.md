@@ -56,9 +56,13 @@ Can be deployed as:
 │   └── detector.py             # Main detection engine
 ├── data/
 │   └── sample_jobs.py          # Test job postings (fake, legit, suspicious)
-├── models/                     # Future: saved models, vectorizers
-├── config/                     # Configuration files
+├── frontend/                   # Flattened UI source from old my-app/apps/web
+├── models/                     # Trained sklearn model artifact(s)
+├── scripts/
+│   └── train_emscad_model.py   # Train model from EMSCAD Kaggle dataset
+├── .github/workflows/ci.yml    # CI for detector and API tests
 ├── test_detector.py            # Quick test script
+├── test_api.py                 # API smoke/integration test script
 ├── requirements.txt            # Python dependencies
 └── README.md                   # This file
 ```
@@ -145,6 +149,20 @@ If your API is running somewhere else, set:
 ```bash
 export NEXT_PUBLIC_API_BASE_URL="http://localhost:8000"
 ```
+
+---
+
+## 🎥 Live Demo
+
+![Live demo](assets/demo.gif)
+
+> Add or replace the GIF at `assets/demo.gif` with a current walkthrough.
+
+---
+
+## 🏷️ Suggested Repository Topics
+
+`fraud-detection`, `nlp`, `machine-learning`, `fastapi`, `job-scam`
 
 ---
 
@@ -343,22 +361,38 @@ Reasons:
 ## 📊 Scoring Algorithm
 
 **Risk Score Calculation:**
-1. **Text Analysis**: 0-1.0 (normalized)
-2. **Company Verification**: 0-1.0 (normalized)
-3. **Salary Analysis**: 0-1.0 (normalized)
-4. **Final Score** = (Text + Company + Salary) / 3 × 100
+1. **Rule-based block** (0-1.0): weighted within rules
+   - Text analysis: 50%
+   - Company verification: 30%
+   - Salary analysis: 20%
+2. **ML fraud probability** (0-1.0): scikit-learn model trained on EMSCAD
+3. **Weighted ensemble**:
+   - Final risk = `0.55 × rule_risk + 0.45 × ml_probability` (when model is available)
+   - Fallback = rule-only risk (when model file is missing or disabled)
+4. **Final score** = risk × 100
 
 **Classification Rules:**
-- **Risk ≥ 70**: 🔴 **FAKE** (high confidence)
-- **Risk 40-70**: 🟡 **SUSPICIOUS** (medium confidence)
-- **Risk < 40**: 🟢 **LEGITIMATE** (high confidence)
+- **Risk ≥ 60**: 🔴 **FAKE** (high confidence)
+- **Risk 30-60**: 🟡 **SUSPICIOUS** (medium confidence)
+- **Risk < 30**: 🟢 **LEGITIMATE** (high confidence)
+
+---
+
+## 🧠 ML Training (EMSCAD Kaggle Dataset)
+
+Train the text classifier from an EMSCAD CSV:
+
+```bash
+python scripts/train_emscad_model.py --dataset /path/to/fake_job_postings.csv --out models/fake_job_classifier.joblib
+```
+
+Expected target column: `fraudulent`.
 
 ---
 
 ## 🔮 Future Enhancements
 
 ### Near-term
-- [ ] Machine learning model (trained on labeled dataset)
 - [ ] Browser extension for Chrome/Firefox
 - [ ] LinkedIn integration (check against company careers page)
 - [ ] Database of known scam companies
@@ -419,9 +453,9 @@ python -m uvicorn api.main:app --port 8001
 ```
 
 ### **Issue: Company verification always returns "not found"**
-The company verification module currently uses a demo database. To add companies:
-1. Edit `core/company_verifier.py`
-2. Add company names to the `known_companies` dictionary
+The verifier now queries the public OpenCorporates registry API. If needed:
+1. Set `COMPANY_REGISTRY_API_KEY` in `.env` (optional but recommended for higher limits)
+2. Verify `COMPANY_REGISTRY_API_URL` is reachable from your environment
 3. Restart the server
 
 ---

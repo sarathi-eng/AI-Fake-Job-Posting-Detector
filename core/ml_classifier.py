@@ -37,11 +37,11 @@ class MLTextClassifier:
         Convert distance from 0.5 into confidence.
         - 0.5 means maximum uncertainty for binary classification.
         - Values closer to 0 or 1 imply stronger model certainty.
-        - We clamp to [0.5, 0.99] so displayed confidence stays bounded and readable.
+        - We clamp to [0.0, 0.99] so near-uncertain predictions stay low-confidence.
         """
         # Scale |p-0.5| from [0, 0.5] to [0, 1]; e.g., p=0.9 => 0.8 confidence signal.
         distance_from_center = abs(probability - 0.5) * 2
-        return max(0.5, min(0.99, distance_from_center))
+        return max(0.0, min(0.99, distance_from_center))
 
     def predict_fraud_probability(self, text: str) -> Optional[float]:
         if not self.available or self.model is None:

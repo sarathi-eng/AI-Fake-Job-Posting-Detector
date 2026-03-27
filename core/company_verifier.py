@@ -113,6 +113,7 @@ class CompanyVerifier:
             # Matching heuristic:
             # - Short names (1-2 tokens): 1 token overlap avoids over-rejecting valid firms.
             # - Longer names: 2 token overlap reduces false positives from generic words.
+            # Example: "Apple" => 1 overlap; "Apple Inc" => 1 overlap; "Big Tech Solutions" => 2 overlaps.
             required_overlap = (
                 MIN_REQUIRED_OVERLAP_SHORT
                 if len(search_tokens) <= SHORT_NAME_TOKEN_THRESHOLD

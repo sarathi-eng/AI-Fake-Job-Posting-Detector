@@ -25,12 +25,13 @@ jobs:
         run: python test_detector.py
 
       - name: Run API tests
+        shell: bash
         run: |
           python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 &
           UVICORN_PID=$!
           API_READY=0
           MAX_WAIT_SECONDS=30
-          for i in $(seq 1 "$MAX_WAIT_SECONDS"); do
+          for ((i=1; i<=MAX_WAIT_SECONDS; i++)); do
             if curl -sf http://127.0.0.1:8000/health >/dev/null; then
               API_READY=1
               break
